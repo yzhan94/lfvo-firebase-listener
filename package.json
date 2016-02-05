@@ -10,6 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "firebase": "^2.4.0",
+    "firebase-queue": "^1.2.1",
     "firebase-token-generator": "^2.0.0"
   }
 }
