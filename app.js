@@ -2,7 +2,7 @@
 
 var Firebase = require('firebase');
 var FirebaseTokenGenerator = require('firebase-token-generator');
-var https = require('https');
+var https = require('http');
 var FirebaseQueue = require('firebase-queue');
 
 /**
@@ -34,20 +34,34 @@ itemRef.authWithCustomToken(token, function(error, authData) {
 
 function getOptions(method, options, itemId) {
 	var options = {
-		hostname: 'brilliant-torch-8285.firebaseio.com',
-		path: '/lr-mockdb/items' + itemId + '.json' + options,
+		hostname: 'localhost',
+		port: 8080,
+		auth: 'test@liferay.com:test',
+		path: '/api/jsonws/lfvo-portlet.item/' + options,
 		method: method,
 	};
 	return options;
 }
 
 var createQueue = new FirebaseQueue(cQueueRef, function(data, progress, resolve, reject) {
-	var options = getOptions('POST', "", "");
+	var options = getOptions('GET', 'add-item/name/' + data.name);
 	var req = https.request(options, function(response) {
-		if (response.statusCode == 200) {
-			itemRef.push(data);
-			resolve(data);
-		}
+		console.log(response.statusCode);
+		var body = '';
+		response.on('data', function (chunk) {
+			body += chunk;
+		});
+		response.on('end', function() {
+			if (response.statusCode == 200) {
+				console.log('Response: ' + body);
+				var item = JSON.parse(body);
+				data.id = item.itemId;
+				itemRef.push(data);
+				resolve(data);
+			}
+		});
+	}).on('error', function(err) {
+		console.log(err);
 	});
 	//var postData = JSON.stringify(json);
 	req.write(JSON.stringify(data));
@@ -55,32 +69,26 @@ var createQueue = new FirebaseQueue(cQueueRef, function(data, progress, resolve,
 });
 
 var updateQueue = new FirebaseQueue(uQueueRef, function(data, progress, resolve, reject) {
-	var options = getOptions('GET', '?orderBy="id"&equalTo="' + data.id +'"', "");
+	var options = getOptions('POST', 'update-item/item-id/' + data.id + '/name/' + data.name);
 	https.request(options, function(response) {
 		var body = '';
 		response.on('data', function (chunk) {
 			body += chunk;
 		});
 		response.on('end', function () {
+			console.log(body);
 			if (response.statusCode == 200) {
-				var options = getOptions('PATCH', "", '/' + Object.keys(JSON.parse(body))[0]);
-				var req = https.request(options, function(response) {
-					if (response.statusCode == 200) {
-						itemRef.orderByChild('id').equalTo(data.id).on('child_added', function(snapshot) {
-							if (snapshot.val().id == data.id) {
-								itemRef.child(snapshot.key()).update(data, function(error) {
-									if (error) {
-										reject(data);
-									} else {
-										resolve(data);
-									}
-								});
+				itemRef.orderByChild('id').equalTo(data.id).on('child_added', function(snapshot) {
+					if (snapshot.val().id == data.id) {
+						itemRef.child(snapshot.key()).update(data, function(error) {
+							if (error) {
+								reject(data);
+							} else {
+								resolve(data);
 							}
 						});
 					}
 				});
-				req.write(JSON.stringify(data));
-				req.end();
 			} else {
 				reject(data);
 			}
@@ -88,8 +96,8 @@ var updateQueue = new FirebaseQueue(uQueueRef, function(data, progress, resolve,
 	}).end();
 });
 
-var updateQueue = new FirebaseQueue(dQueueRef, function(data, progress, resolve, reject) {
-	var options = getOptions('GET', '?orderBy="id"&equalTo="' + data.id +'"', "");
+var deleteQueue = new FirebaseQueue(dQueueRef, function(data, progress, resolve, reject) {
+	var options = getOptions('POST', '/remove-item/item-id/' + data.id, "");
 	https.request(options, function(response) {
 		var body = '';
 		response.on('data', function (chunk) {
@@ -97,24 +105,17 @@ var updateQueue = new FirebaseQueue(dQueueRef, function(data, progress, resolve,
 		});
 		response.on('end', function () {
 			if (response.statusCode == 200) {
-				var options = getOptions('DELETE', "", '/' + Object.keys(JSON.parse(body))[0]);
-				var req = https.request(options, function(response) {
-					if (response.statusCode == 200) {
-						itemRef.orderByChild('id').equalTo(data.id).on('child_added', function(snapshot) {
-							if (snapshot.val().id == data.id) {
-								itemRef.child(snapshot.key()).set(null, function(error) {
-									if (error) {
-										reject(data);
-									} else {
-										resolve(data);
-									}
-								});
+				itemRef.orderByChild('id').equalTo(data.id).on('child_added', function(snapshot) {
+					if (snapshot.val().id == data.id) {
+						itemRef.child(snapshot.key()).set(null, function(error) {
+							if (error) {
+								reject(data);
+							} else {
+								resolve(data);
 							}
 						});
 					}
 				});
-				req.write(JSON.stringify(data));
-				req.end();
 			} else {
 				reject(data);
 			}
