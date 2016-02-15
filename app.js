@@ -2,18 +2,19 @@
 
 var Firebase = require('firebase');
 var FirebaseTokenGenerator = require('firebase-token-generator');
-var https = require('https');
-var querystring = require('querystring');
+var https = require('http');
+var FirebaseQueue = require('firebase-queue');
 
 /**
 ** Item definition
-**   id: { 
+**   id: {
 **     .........
-**     sync : true|false 
 **   }
 **/
 
-var itemRef = new Firebase('https://brilliant-torch-8285.firebaseio.com/items');
+var ref = new Firebase('https://brilliant-torch-8285.firebaseio.com/');
+var itemRef = ref.child('items');
+
 
 /* Authentication (unnecessary for now)
 var SECRET = '<YOUR_SECRET_KEY>';
@@ -29,62 +30,82 @@ itemRef.authWithCustomToken(token, function(error, authData) {
 });
 */
 
-function setSync(ref, val) {
-	ref.update({
-		"sync": val
-	});
-}
-
-function getOptions(method, itemId) {
+function getOptions(method, options, itemId) {
 	var options = {
-		hostname: 'brilliant-torch-8285.firebaseio.com',
-		path: '/lr-mockdb/items/' + itemId + '.json',
+		hostname: 'localhost',
+		port: 8080,
+		auth: 'test@liferay.com:test',
+		path: '/api/jsonws/lfvo-portlet.item/' + options,
 		method: method,
 	};
 	return options;
 }
 
-itemRef.on('child_added', function(snapshot) {
-	if (!snapshot.val().sync) {
-		var options = getOptions('PUT', snapshot.key());
-		var req = https.request(options, function(response) {
+function itemAdded(localRef) {
+	return function(snapshot) {
+		var localItem = snapshot.val();
+		if (!localItem.id) {
+			var options = getOptions('GET', 'add-item-remote/name/' + localItem.name);
+			var req = https.request(options, function(response) {
+				var body = '';
+				response.on('data', function (chunk) {
+					body += chunk;
+				});
+				response.on('end', function() {
+					if (response.statusCode == 200) {
+						console.log('Response: ' + body);
+						var item = JSON.parse(body);
+						localRef.child(snapshot.key()).update({"id": item.itemId})
+					}
+				});
+			}).on('error', function(err) {
+				console.log(err);
+			});
+			//var postData = JSON.stringify(json);
+			//req.write(JSON.stringify(snapshot.val());
+			req.end();
+		}
+	}
+};
+
+function itemRemoved(snapshot) {
+	var item = snapshot.val();
+	var options = getOptions('POST', '/remove-item-remote/item-id/' + item.id, "");
+	https.request(options, function(response) {
+		var body = '';
+		response.on('data', function (chunk) {
+			body += chunk;
+		});
+		response.on('end', function () {
 			if (response.statusCode == 200) {
-				setSync(itemRef.child(snapshot.key()), true);
-				console.log('item added: ' + snapshot.key());
+				//item removed
 			}
 		});
+	}).end();
+};
 
-		var data = JSON.stringify(snapshot.val());
-		req.write(data);
-		req.end();
+function itemUpdated(snapshot) {
+	var item = snapshot.val();
+	if (item.id) {
+		console.log("Updated: ")
+		var options = getOptions('POST', 'update-item-remote/item-id/' + item.id + '/name/' + item.name);
+		https.request(options, function(response) {
+			var body = '';
+			response.on('data', function (chunk) {
+				body += chunk;
+			});
+			response.on('end', function () {
+				console.log(body);
+			});
+		}).end();
 	}
-});
+};
 
-itemRef.on('child_removed', function(snapshot) {
-	if (!snapshot.val().sync) {
-		var options = getOptions('DELETE', snapshot.key());
-		var req = https.request(options, function(response) {
-			if (response.statusCode == 200) {
-				console.log('item removed: ' + snapshot.key());
-			}
-		});
-		req.end();
-	}
-});
+itemRef.child('alert').child('lost').on('child_added', itemAdded(itemRef.child('alert').child('lost')));
+itemRef.child('alert').child('found').on('child_added', itemAdded(itemRef.child('alert').child('found')));
 
-itemRef.on('child_changed', function(snapshot) {
-	if (!snapshot.val().sync) {
-		var options = getOptions('PATCH', snapshot.key());
-		var req = https.request(options, function(response) {
-			if (response.statusCode == 200) {
-				setSync(itemRef.child(snapshot.key()), true);
-				console.log('item changed: ' + snapshot.key());
-			}
-		});
-		var data = JSON.stringify(snapshot.val());
-		req.write(data);
-		req.end();
-	}
-});
+itemRef.child('alert').child('lost').on('child_removed', itemRemoved);
+itemRef.child('alert').child('found').on('child_removed', itemRemoved);
 
-
+itemRef.child('alert').child('lost').on('child_changed', itemUpdated);
+itemRef.child('alert').child('found').on('child_changed', itemUpdated);
