@@ -2,8 +2,8 @@
 
 var Firebase = require('firebase');
 var FirebaseTokenGenerator = require('firebase-token-generator');
-var https = require('http');
 var FirebaseQueue = require('firebase-queue');
+var LiferayREST = require('./liferay_util.js')
 
 /**
 ** Item definition
@@ -30,48 +30,33 @@ itemRef.authWithCustomToken(token, function(error, authData) {
 });
 */
 
-function getOptions(method, options, itemId) {
-	var options = {
-		hostname: 'localhost',
-		port: 8080,
-		auth: 'test@liferay.com:test',
-		path: '/api/jsonws/lfvo-portlet.item/' + options,
-		method: method,
-	};
-	return options;
-}
 
 function itemAdded(localRef) {
 	return function(snapshot) {
-		var localItem = snapshot.val();
-		if (!localItem.id) {
-			var options = getOptions('GET', 'add-item-remote/name/' + localItem.name);
-			var req = https.request(options, function(response) {
+		var item = snapshot.val();
+		if (!item.id) {
+			LiferayREST.addOrUpdate(item, function(response) {
 				var body = '';
 				response.on('data', function (chunk) {
 					body += chunk;
 				});
 				response.on('end', function() {
 					if (response.statusCode == 200) {
-						console.log('Response: ' + body);
-						var item = JSON.parse(body);
-						localRef.child(snapshot.key()).update({"id": item.itemId})
+						var newItem = JSON.parse(body).result;
+						if (newItem.itemId)
+							localRef.child(snapshot.key()).update({"id": Number(newItem.itemId)})
 					}
 				});
-			}).on('error', function(err) {
-				console.log(err);
+			}, function(error) {
+				console.log(error);
 			});
-			//var postData = JSON.stringify(json);
-			//req.write(JSON.stringify(snapshot.val());
-			req.end();
 		}
 	}
 };
 
 function itemRemoved(snapshot) {
 	var item = snapshot.val();
-	var options = getOptions('POST', '/remove-item-remote/item-id/' + item.id, "");
-	https.request(options, function(response) {
+	LiferayREST.delete(itemId, function(response) {
 		var body = '';
 		response.on('data', function (chunk) {
 			body += chunk;
@@ -81,15 +66,16 @@ function itemRemoved(snapshot) {
 				//item removed
 			}
 		});
-	}).end();
+	}, function(error) {
+		console.log(error);
+	});
+
 };
 
 function itemUpdated(snapshot) {
 	var item = snapshot.val();
 	if (item.id) {
-		console.log("Updated: ")
-		var options = getOptions('POST', 'update-item-remote/item-id/' + item.id + '/name/' + item.name);
-		https.request(options, function(response) {
+		LiferayREST.addOrUpdate(item, function(response) {
 			var body = '';
 			response.on('data', function (chunk) {
 				body += chunk;
@@ -97,9 +83,12 @@ function itemUpdated(snapshot) {
 			response.on('end', function () {
 				console.log(body);
 			});
-		}).end();
+		}, function(error) {
+			console.log(error);
+		});
 	}
 };
+
 
 itemRef.child('alert').child('lost').on('child_added', itemAdded(itemRef.child('alert').child('lost')));
 itemRef.child('alert').child('found').on('child_added', itemAdded(itemRef.child('alert').child('found')));
