@@ -5,7 +5,7 @@ var http = require('http');
 var options = {
   hostname: 'localhost',
   port: 8080,
-  auth: 'test@liferay.com:test',
+  auth: 'fblistener@liferay.com:fblistener',
   path: '/api/jsonws/lfvo-portlet.item',
   method: 'POST',
 };
@@ -21,8 +21,12 @@ exports.addOrUpdate = function (item, onSuccess, onFailure) {
 		"method":"add-or-update-item",
 		"params": {
 			"+item": "net.indaba.lostandfound.model.impl.ItemImpl",
+			"item.itemId": item.id ? item.id : 0,
+			"item.groupId": item.groupId,
 			"item.name": item.name,
 			"item.description": item.description,
+			"item.type": item.type,
+			"serviceContext.userId": 25602
 			//"serviceContext.assetCategoryIds": itemCategories
 		},
 		"jsonrpc":"2.0"

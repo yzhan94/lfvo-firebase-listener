@@ -56,7 +56,7 @@ function itemAdded(localRef) {
 
 function itemRemoved(snapshot) {
 	var item = snapshot.val();
-	LiferayREST.delete(itemId, function(response) {
+	LiferayREST.delete(item.id, function(response) {
 		var body = '';
 		response.on('data', function (chunk) {
 			body += chunk;
