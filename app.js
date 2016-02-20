@@ -2,7 +2,6 @@
 
 var Firebase = require('firebase');
 var FirebaseTokenGenerator = require('firebase-token-generator');
-var FirebaseQueue = require('firebase-queue');
 var LiferayREST = require('./liferay_util.js')
 
 /**
@@ -31,28 +30,32 @@ itemRef.authWithCustomToken(token, function(error, authData) {
 */
 
 
-function itemAdded(localRef) {
-	return function(snapshot) {
-		var item = snapshot.val();
-		if (!item.id) {
-			LiferayREST.addOrUpdate(item, function(response) {
-				var body = '';
-				response.on('data', function (chunk) {
-					body += chunk;
-				});
-				response.on('end', function() {
-					if (response.statusCode == 200) {
-						var newItem = JSON.parse(body).result;
-						if (newItem.itemId)
-							localRef.child(snapshot.key()).update({"id": Number(newItem.itemId)})
-					}
-				});
-			}, function(error) {
-				console.log(error);
+function itemAdded(snapshot) {
+	var item = snapshot.val();
+	item.type = snapshot.ref().parent().key();
+	if (!item.id) {
+		LiferayREST.addOrUpdate(item, function(response) {
+			var body = '';
+			response.on('data', function (chunk) {
+				body += chunk;
 			});
-		}
+			response.on('end', function() {
+				if (response.statusCode == 200) {
+					var newItem = JSON.parse(body).result;
+					console.info("Item added\n");
+					if (newItem.itemId)
+						snapshot.ref().update({
+							"id": Number(newItem.itemId),
+							"liferay": true
+						});
+				}
+			});
+		}, function(error) {
+			console.log(error);
+		});
 	}
 };
+
 
 function itemRemoved(snapshot) {
 	var item = snapshot.val();
@@ -64,6 +67,7 @@ function itemRemoved(snapshot) {
 		response.on('end', function () {
 			if (response.statusCode == 200) {
 				//item removed
+				console.info("Item removed\n");
 			}
 		});
 	}, function(error) {
@@ -74,14 +78,18 @@ function itemRemoved(snapshot) {
 
 function itemUpdated(snapshot) {
 	var item = snapshot.val();
-	if (item.id) {
+	if (item.liferay) {
+		snapshot.ref().parent().off('child_changed', itemUpdated);
+		snapshot.ref().child("/liferay").remove();	
+		snapshot.ref().parent().on('child_changed', itemUpdated);
+	} else {
 		LiferayREST.addOrUpdate(item, function(response) {
 			var body = '';
 			response.on('data', function (chunk) {
 				body += chunk;
 			});
 			response.on('end', function () {
-				console.log(body);
+				console.info("Item updated\n");
 			});
 		}, function(error) {
 			console.log(error);
@@ -90,8 +98,8 @@ function itemUpdated(snapshot) {
 };
 
 
-itemRef.child('alert').child('lost').on('child_added', itemAdded(itemRef.child('alert').child('lost')));
-itemRef.child('alert').child('found').on('child_added', itemAdded(itemRef.child('alert').child('found')));
+itemRef.child('alert').child('lost').on('child_added', itemAdded);
+itemRef.child('alert').child('found').on('child_added', itemAdded);
 
 itemRef.child('alert').child('lost').on('child_removed', itemRemoved);
 itemRef.child('alert').child('found').on('child_removed', itemRemoved);
