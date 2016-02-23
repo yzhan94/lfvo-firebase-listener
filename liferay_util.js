@@ -26,6 +26,7 @@ exports.addOrUpdate = function (item, onSuccess, onFailure) {
 			"item.name": item.name,
 			"item.description": item.description,
 			"item.type": item.type,
+			"item.new": true,
 			"serviceContext.userId": 25602
 			//"serviceContext.assetCategoryIds": itemCategories
 		},
