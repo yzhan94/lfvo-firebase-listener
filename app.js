@@ -1,7 +1,7 @@
 'use strict';
 
 var Firebase = require('firebase');
-var FirebaseTokenGenerator = require('firebase-token-generator');
+//var FirebaseTokenGenerator = require('firebase-token-generator');
 var LiferayREST = require('./liferay_util.js')
 
 /**
@@ -11,6 +11,7 @@ var LiferayREST = require('./liferay_util.js')
 **   }
 **/
 
+var ignoreList = [];
 var ref = new Firebase('https://brilliant-torch-8285.firebaseio.com/');
 var itemRef = ref.child('items');
 
@@ -29,6 +30,9 @@ itemRef.authWithCustomToken(token, function(error, authData) {
 });
 */
 
+function updateTimestamp() {
+	ref.child("/_TIMESTAMP/NodeJS").set(Firebase.ServerValue.TIMESTAMP);
+}
 
 function itemAdded(snapshot) {
 	var item = snapshot.val();
@@ -42,12 +46,14 @@ function itemAdded(snapshot) {
 			response.on('end', function() {
 				if (response.statusCode == 200) {
 					var newItem = JSON.parse(body).result;
-					console.info("Item added\n");
-					if (newItem.itemId)
+					console.info("Item added "+ newItem.itemId + "\n");
+					if (newItem.itemId) {
 						snapshot.ref().update({
 							"id": Number(newItem.itemId),
 							"liferay": true
 						});
+						updateTimestamp();
+					}
 				}
 			});
 		}, function(error) {
@@ -68,6 +74,7 @@ function itemRemoved(snapshot) {
 			if (response.statusCode == 200) {
 				//item removed
 				console.info("Item removed\n");
+				updateTimestamp();
 			}
 		});
 	}, function(error) {
@@ -78,10 +85,13 @@ function itemRemoved(snapshot) {
 
 function itemUpdated(snapshot) {
 	var item = snapshot.val();
+	var index = ignoreList.indexOf(item.id);
 	if (item.liferay) {
-		snapshot.ref().parent().off('child_changed', itemUpdated);
+		ignoreList.push(item.id);
 		snapshot.ref().child("/liferay").remove();	
-		snapshot.ref().parent().on('child_changed', itemUpdated);
+		updateTimestamp();
+	} else if (index > -1) {
+		ignoreList[index] = null;
 	} else {
 		LiferayREST.addOrUpdate(item, function(response) {
 			var body = '';
@@ -90,6 +100,7 @@ function itemUpdated(snapshot) {
 			});
 			response.on('end', function () {
 				console.info("Item updated\n");
+				updateTimestamp();
 			});
 		}, function(error) {
 			console.log(error);

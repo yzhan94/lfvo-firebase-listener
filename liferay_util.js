@@ -5,18 +5,18 @@ var http = require('http');
 var options = {
   hostname: 'localhost',
   port: 8080,
-  auth: 'fblistener@liferay.com:fblistener',
+  auth: 'test@liferay.com:test',
   path: '/api/jsonws/lfvo-portlet.item',
   method: 'POST',
 };
 
 exports.addOrUpdate = function (item, onSuccess, onFailure) {
-  /* Categories not implemented yet
-  **
-  var itemCategories = '' + item.categories[0];
-  for (var i = 0; i < item.categories.length; i++)
-    itemCategories += ', ' + item.categories[i];
-  */
+	/* Categories not implemented yet
+	**
+	var itemCategories = '' + item.categories[0];
+	for (var i = 0; i < item.categories.length; i++)
+	itemCategories += ', ' + item.categories[i];
+	*/
 	var jsonrpc = {
 		"method":"add-or-update-item",
 		"params": {
@@ -32,21 +32,23 @@ exports.addOrUpdate = function (item, onSuccess, onFailure) {
 		},
 		"jsonrpc":"2.0"
 	};
-
-	var req = http.request(options, onSuccess, onFailure);
+	
+	var req = http.request(options, onSuccess);
+	req.on('error', onFailure);
 	req.write(JSON.stringify(jsonrpc));
 	req.end();
 };
 
 exports.delete = function (itemId, onSuccess, onFailure) {
-  var jsonrpc = {
-    "method":"delete-item",
-    "params": {
-      "itemId": itemId,
-    },
-    "jsonrpc":"2.0"
-  };
-  var req = http.request(options, onSuccess, onFailure);
-  req.write(JSON.stringify(jsonrpc));
-  req.end();
+		var jsonrpc = {
+				"method":"delete-item",
+				"params": {
+						"itemId": itemId,
+				},
+				"jsonrpc":"2.0"
+		};
+		var req = http.request(options, onSuccess, onFailure);
+		req.on('error', onFailure);
+		req.write(JSON.stringify(jsonrpc));
+		req.end();
 }
