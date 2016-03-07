@@ -11,7 +11,7 @@ var LiferayREST = require('./liferay_util.js')
 **   }
 **/
 
-var ignoreList = [];
+var ignoreList = {};
 var ref = new Firebase('https://brilliant-torch-8285.firebaseio.com/');
 var itemRef = ref.child('items');
 
@@ -85,13 +85,12 @@ function itemRemoved(snapshot) {
 
 function itemUpdated(snapshot) {
 	var item = snapshot.val();
-	var index = ignoreList.indexOf(item.id);
 	if (item.liferay) {
-		ignoreList.push(item.id);
+		ignoreList[item.id] = true;
 		snapshot.ref().child("/liferay").remove();	
 		updateTimestamp();
-	} else if (index > -1) {
-		ignoreList[index] = null;
+	} else if (ignoreList[item.id]) {
+		ignoreList[item.id] = null;
 	} else {
 		LiferayREST.addOrUpdate(item, function(response) {
 			var body = '';
