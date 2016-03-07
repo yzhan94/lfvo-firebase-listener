@@ -34,7 +34,12 @@ function updateTimestamp() {
 	ref.child("/_TIMESTAMP/NodeJS").set(Firebase.ServerValue.TIMESTAMP);
 }
 
+function syncItem(snapshot) {
+	console.log("SyncItem");
+}
+
 function itemAdded(snapshot) {
+	console.log("ItemAdded");
 	var item = snapshot.val();
 	item.type = snapshot.ref().parent().key();
 	if (!item.id) {
@@ -64,6 +69,7 @@ function itemAdded(snapshot) {
 
 
 function itemRemoved(snapshot) {
+	console.log("ItemRemoved");
 	var item = snapshot.val();
 	LiferayREST.delete(item.id, function(response) {
 		var body = '';
@@ -84,6 +90,7 @@ function itemRemoved(snapshot) {
 };
 
 function itemUpdated(snapshot) {
+	console.log("ItemUpdated");
 	var item = snapshot.val();
 	if (item.liferay) {
 		ignoreList[item.id] = true;
@@ -107,12 +114,29 @@ function itemUpdated(snapshot) {
 	}
 };
 
+ref.child('_TIMESTAMP').once('value', function(snapshot) {
+	var TIMESTAMP = snapshot.val().NodeJS;
 
-itemRef.child('alert').child('lost').on('child_added', itemAdded);
-itemRef.child('alert').child('found').on('child_added', itemAdded);
+	console.log("StartSync");
+	itemRef.child('alert').child('lost').orderByChild("modifiedAt").startAt(TIMESTAMP).once('value', function(snapshot) {
+		var items = snapshot.val();
+		/* Push unsynced changes to Liferay */
+		for (var key in items) {
+			syncItem(items.key);
+		}
+		/* Enable callbacks */
+		itemRef.child('alert').child('lost').on('child_removed', itemRemoved);
+		itemRef.child('alert').child('found').on('child_removed', itemRemoved);
 
-itemRef.child('alert').child('lost').on('child_removed', itemRemoved);
-itemRef.child('alert').child('found').on('child_removed', itemRemoved);
+		itemRef.child('alert').child('lost').on('child_changed', itemUpdated);
+		itemRef.child('alert').child('found').on('child_changed', itemUpdated);
 
-itemRef.child('alert').child('lost').on('child_changed', itemUpdated);
-itemRef.child('alert').child('found').on('child_changed', itemUpdated);
+		itemRef.child('alert').child('lost').on('child_added', itemAdded);
+		itemRef.child('alert').child('found').on('child_added', itemAdded);
+
+});
+
+});
+ 
+
+
