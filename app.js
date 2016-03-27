@@ -3,6 +3,7 @@
 var Firebase = require('firebase');
 //var FirebaseTokenGenerator = require('firebase-token-generator');
 var LiferayREST = require('./liferay_util.js')
+var LiferayImageUtil = require('./liferay-images-util.js');
 
 /**
 ** Item definition
@@ -14,7 +15,7 @@ var LiferayREST = require('./liferay_util.js')
 var ignoreList = {};
 var ref = new Firebase('https://brilliant-torch-8285.firebaseio.com/');
 var itemRef = ref.child('items');
-
+var imageRef = ref.child('images');
 
 /* Authentication (unnecessary for now)
 var SECRET = '<YOUR_SECRET_KEY>';
@@ -29,13 +30,58 @@ itemRef.authWithCustomToken(token, function(error, authData) {
 	}
 });
 */
-
 function updateTimestamp() {
 	ref.child("/_TIMESTAMP/NodeJS").set(Firebase.ServerValue.TIMESTAMP);
 }
 
-function syncItem(snapshot) {
+function syncItem(item) {
+	//TODO function not working
 	console.log("SyncItem");
+	if (item.id) {
+	if (item.liferay) {
+		ignoreList[item.id] = true;
+		snapshot.ref().child("/liferay").remove();	
+		updateTimestamp();
+	} else if (ignoreList[item.id]) {
+		ignoreList[item.id] = null;
+	} else {
+		LiferayREST.addOrUpdate(item, function(response) {
+			var body = '';
+			response.on('data', function (chunk) {
+				body += chunk;
+			});
+			response.on('end', function () {
+				console.info("Item updated\n");
+				updateTimestamp();
+			});
+		}, function(error) {
+			console.log(error);
+		});
+	}
+	} else {
+		/* Add item on LR */	
+		LiferayREST.addOrUpdate(item, function(response) {
+			var body = '';
+			response.on('data', function (chunk) {
+				body += chunk;
+			});
+			response.on('end', function() {
+				if (response.statusCode == 200) {
+					var newItem = JSON.parse(body).result;
+					console.info("Item added "+ newItem.itemId + "\n");
+					if (newItem.itemId) {
+						snapshot.ref().update({
+							"id": Number(newItem.itemId),
+							"liferay": true
+						});
+						updateTimestamp();
+					}
+				}
+			});
+		}, function(error) {
+			console.log(error);
+		});
+	}	
 }
 
 function itemAdded(snapshot) {
@@ -67,7 +113,6 @@ function itemAdded(snapshot) {
 	}
 };
 
-
 function itemRemoved(snapshot) {
 	console.log("ItemRemoved");
 	var item = snapshot.val();
@@ -86,7 +131,6 @@ function itemRemoved(snapshot) {
 	}, function(error) {
 		console.log(error);
 	});
-
 };
 
 function itemUpdated(snapshot) {
@@ -114,27 +158,84 @@ function itemUpdated(snapshot) {
 	}
 };
 
+/* Enable callbacks */
+/* Item listeners */
+itemRef.child('alert').child('lost').on('child_removed', itemRemoved);
+itemRef.child('alert').child('found').on('child_removed', itemRemoved);
+
+itemRef.child('alert').child('lost').on('child_changed', itemUpdated);
+itemRef.child('alert').child('found').on('child_changed', itemUpdated);
+
+itemRef.child('alert').child('lost').on('child_added', itemAdded);
+itemRef.child('alert').child('found').on('child_added', itemAdded);
+
+/* Image listeners */
+function imageAdded(snapshot) {
+	var image = snapshot.val();
+	if (!image.id) {
+		console.log("ImageAdded");
+		LiferayImageUtil.add(image, function(response) {
+			var body = '';
+			response.on('data', function (chunk) {
+				body += chunk;
+			});
+			response.on('end', function() {
+				if (response.statusCode == 200) {
+					var newImage = JSON.parse(body).result;
+					console.info("Image added "+ newImage.lfImageId + "\n");
+					if (newImage.lfImageId) {
+						snapshot.ref().update({
+							"id": Number(newImage.lfImageId),
+							"liferay": true
+						});
+						updateTimestamp();
+					}
+				} else {
+					console.log(body + '\n');
+				}
+			});
+		}, function(error) {
+			console.log(error);
+		});
+	}
+};
+
+function imageRemoved(snapshot) {
+	var image = snapshot.val();
+	console.log("Removing Image: " + image.id);
+	LiferayImageUtil.delete(image.id, function(response) {
+		var body = '';
+		response.on('data', function (chunk) {
+			body += chunk;
+		});
+		response.on('end', function () {
+			if (response.statusCode == 200) {
+				console.log("Image removed\n");
+				updateTimestamp();
+			} else {
+				console.log(body + '\n');
+			}
+		});
+	}, function(error) {
+		console.log(error);
+	});
+}
+imageRef.on('child_added', imageAdded);
+imageRef.on('child_removed', imageRemoved);
+
+/* Resync items */
 ref.child('_TIMESTAMP').once('value', function(snapshot) {
 	var TIMESTAMP = snapshot.val().NodeJS;
 
 	console.log("StartSync");
+	//TODO found alerts sync?
 	itemRef.child('alert').child('lost').orderByChild("modifiedAt").startAt(TIMESTAMP).once('value', function(snapshot) {
 		var items = snapshot.val();
 		/* Push unsynced changes to Liferay */
 		for (var key in items) {
 			syncItem(items.key);
 		}
-		/* Enable callbacks */
-		itemRef.child('alert').child('lost').on('child_removed', itemRemoved);
-		itemRef.child('alert').child('found').on('child_removed', itemRemoved);
-
-		itemRef.child('alert').child('lost').on('child_changed', itemUpdated);
-		itemRef.child('alert').child('found').on('child_changed', itemUpdated);
-
-		itemRef.child('alert').child('lost').on('child_added', itemAdded);
-		itemRef.child('alert').child('found').on('child_added', itemAdded);
-
-});
+	});
 
 });
  
