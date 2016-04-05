@@ -1,39 +1,34 @@
 'use strict'
 
 var http = require('http');
+var liferay = require('./liferay.json')
 
 var options = {
-  hostname: 'localhost',
-  port: 8080,
-  auth: 'test@liferay.com:test',
+  hostname: liferay.hostname,
+	port: liferay.port,
+	auth: liferay.auth,
   path: '/api/jsonws/mbmessage',
   method: 'POST',
 };
 
-var groupId = 20232;
+var groupId = liferay.groupId;
 var className = "net.indaba.lostandfound.model.Item";
 
 exports.add = function (message, onSuccess, onFailure) {
-	/* Categories not implemented yet
-	**
-	var messageCategories = '' + message.categories[0];
-	for (var i = 0; i < message.categories.length; i++)
-	messageCategories += ', ' + message.categories[i];
-	*/
 	var jsonrpc = {
 		"method":"add-discussion-message",
 		"params": {
 			"groupId": groupId,
 			"className": className,
 			"classPK": message.itemId,
-			"threadId":,
-			"parentMessageId":,
+			"threadId": 0,
+			"parentMessageId": 0,
 			"subject": message.subject,
 			"body": message.body,
 		},
 		"jsonrpc":"2.0"
 	};
-	
+
 	var req = http.request(options, onSuccess);
 	req.on('error', onFailure);
 	req.write(JSON.stringify(jsonrpc));

@@ -1,0 +1,6 @@
+{
+  "hostname": "localhost",
+  "port": 8080,
+  "auth": "test@liferay.com:test",
+  "groupId": 20232
+}

@@ -1,11 +1,12 @@
-'use strict'
+'use strict';
 
 var http = require('http');
+var liferay = require('./liferay.json')
 
 var options = {
-  hostname: 'localhost',
-  port: 8080,
-  auth: 'test@liferay.com:test',
+  hostname: liferay.hostname,
+	port: liferay.port,
+	auth: liferay.auth,
   path: '/api/jsonws/lfvo-portlet.item',
   method: 'POST',
 };
@@ -27,12 +28,13 @@ exports.addOrUpdate = function (item, onSuccess, onFailure) {
 			"item.description": item.description,
 			"item.type": item.type,
 			"item.new": true,
-			"serviceContext.userId": 25602
+			"serviceContext.userId": 25602,
+      "serviceContext.companyId": 20202,
 			//"serviceContext.assetCategoryIds": itemCategories
 		},
 		"jsonrpc":"2.0"
 	};
-	
+
 	var req = http.request(options, onSuccess);
 	req.on('error', onFailure);
 	req.write(JSON.stringify(jsonrpc));
