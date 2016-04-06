@@ -42,7 +42,7 @@ function imageRemoved(snapshot) {
 		});
 		response.on('end', function () {
 			if (response.statusCode == 200) {
-				console.log("Image removed - id: %d", snapshot.id);
+				console.log("Image removed - id: %d", image.id);
 			} else {
 				console.error("Error removing image: %s ", body);
 			}

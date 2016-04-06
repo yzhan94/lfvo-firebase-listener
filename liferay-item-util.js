@@ -12,12 +12,13 @@ var options = {
 };
 
 exports.addOrUpdate = function (item, onSuccess, onFailure) {
-	/* Categories not implemented yet
-	**
-	var itemCategories = '' + item.categories[0];
-	for (var i = 0; i < item.categories.length; i++)
-	itemCategories += ', ' + item.categories[i];
-	*/
+	
+	var categories = Object.keys(item.categories);
+	var itemCategories = '' + categories[0];
+	for (var i = 1; i < categories.length; i++) {
+		itemCategories += ', ' + categories[i];
+	}
+	
 	var jsonrpc = {
 		"method":"add-or-update-item",
 		"params": {
@@ -27,10 +28,11 @@ exports.addOrUpdate = function (item, onSuccess, onFailure) {
 			"item.name": item.name,
 			"item.description": item.description,
 			"item.type": item.type,
-			"item.new": true,
-			"serviceContext.userId": 25602,
-      "serviceContext.companyId": 20202,
-			//"serviceContext.assetCategoryIds": itemCategories
+			"item.new": item.id ? false : true,
+			"serviceContext.userId": liferay.userId,
+			"serviceContext.companyId": liferay.companyId,
+			"serviceContext.groupId": liferay.groupId,
+			"serviceContext.assetCategoryIds": itemCategories
 		},
 		"jsonrpc":"2.0"
 	};
@@ -42,15 +44,15 @@ exports.addOrUpdate = function (item, onSuccess, onFailure) {
 };
 
 exports.delete = function (itemId, onSuccess, onFailure) {
-		var jsonrpc = {
-				"method":"delete-item",
-				"params": {
-						"itemId": itemId,
-				},
-				"jsonrpc":"2.0"
-		};
-		var req = http.request(options, onSuccess, onFailure);
-		req.on('error', onFailure);
-		req.write(JSON.stringify(jsonrpc));
-		req.end();
+	var jsonrpc = {
+		"method":"delete-item",
+		"params": {
+			"itemId": itemId,
+		},
+		"jsonrpc":"2.0"
+	};
+	var req = http.request(options, onSuccess, onFailure);
+	req.on('error', onFailure);
+	req.write(JSON.stringify(jsonrpc));
+	req.end();
 }
