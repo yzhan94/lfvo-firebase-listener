@@ -68,6 +68,7 @@ function itemAdded(snapshot) {
 					if (newItem.itemId) {
 						snapshot.ref().update({
 							"id": Number(newItem.itemId),
+							"modifiedAt": Number(newItem.modifiedDate),
 							"liferay": true
 						});
 					}
