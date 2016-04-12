@@ -13,12 +13,13 @@ var options = {
 
 exports.addOrUpdate = function (item, onSuccess, onFailure) {
 	
-	var categories = Object.keys(item.categories);
-	var itemCategories = '' + categories[0];
-	for (var i = 1; i < categories.length; i++) {
-		itemCategories += ', ' + categories[i];
-	}
-	
+	if (item.categories) {
+			var categories = Object.keys(item.categories);
+			var itemCategories = '' + categories[0];
+			for (var i = 1; i < categories.length; i++) {
+				itemCategories += ', ' + categories[i];
+			}
+	}	
 	var jsonrpc = {
 		"method":"add-or-update-item",
 		"params": {

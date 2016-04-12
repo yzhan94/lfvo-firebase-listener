@@ -104,6 +104,7 @@ function itemRemoved(snapshot) {
 
 function itemUpdated(snapshot) {
 	var item = snapshot.val();
+	item.type = snapshot.ref().parent().key();
 	if (item.liferay) {
 		ignoreList[item.id] = true;
 		snapshot.ref().child("/liferay").remove();
