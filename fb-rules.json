@@ -1,0 +1,20 @@
+{
+	"rules": {
+		".read": true,
+		".write": true,
+		"items": {
+			"alert": {
+				".indexOn": ["id", "modifiedAt"]
+			},
+			"office": {
+				".indexOn": ["id", "modifiedAt"]
+			}
+		},
+		"images": {
+			".indexOn": "id"
+		},
+		"messages": {
+			".indexOn": ["id", "modifiedDate"]
+		}
+	}
+}

@@ -54,7 +54,6 @@ function syncItem(item) {
 
 function itemAdded(snapshot) {
 	var item = snapshot.val();
-	item.type = snapshot.ref().parent().key();
 	if (!item.id) {
 		LiferayItemUtil.addOrUpdate(item, function(response) {
 			var body = '';
@@ -104,7 +103,6 @@ function itemRemoved(snapshot) {
 
 function itemUpdated(snapshot) {
 	var item = snapshot.val();
-	item.type = snapshot.ref().parent().key();
 	if (item.liferay) {
 		ignoreList[item.id] = true;
 		snapshot.ref().child("/liferay").remove();
@@ -129,28 +127,22 @@ function itemUpdated(snapshot) {
 	}
 };
 
-/* Enable callbacks */
 /* Item listeners */
 exports.listen = function(itemRef) {
-	itemRef.child('alert').child('lost').on('child_removed', itemRemoved);
-	itemRef.child('alert').child('found').on('child_removed', itemRemoved);
-
-	itemRef.child('alert').child('lost').on('child_changed', itemUpdated);
-	itemRef.child('alert').child('found').on('child_changed', itemUpdated);
-
-	itemRef.child('alert').child('lost').on('child_added', itemAdded);
-	itemRef.child('alert').child('found').on('child_added', itemAdded);
+	itemRef.child('alert').on('child_removed', itemRemoved);
+	itemRef.child('alert').on('child_changed', itemUpdated);
+	itemRef.child('alert').on('child_added', itemAdded);
 }
 
 /* Resync items */
 exports.resync = function(itemRef, TIMESTAMP) {
-		console.log("StartSync");
-		//TODO found alerts sync?
-		itemRef.child('alert').child('lost').orderByChild("modifiedAt").startAt(TIMESTAMP).once('value', function(snapshot) {
-			var items = snapshot.val();
-			/* Push unsynced changes to Liferay */
-			for (var key in items) {
-				syncItem(items.key);
-			}
-		});
+	console.log("StartSync");
+	//TODO found alerts sync?
+	itemRef.child('alert').child('lost').orderByChild("modifiedAt").startAt(TIMESTAMP).once('value', function(snapshot) {
+		var items = snapshot.val();
+		/* Push unsynced changes to Liferay */
+		for (var key in items) {
+			syncItem(items.key);
+		}
+	});
 }
