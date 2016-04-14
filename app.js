@@ -27,7 +27,7 @@ itemRef.authWithCustomToken(token, function(error, authData) {
 var updateTS=true;
 function updateTimestamp() {
 	if (updateTS) {
-		ref.child("/_TIMESTAMP/NodeJS").set(Firebase.ServerValue.TIMESTAMP);
+		ref.child("_TIMESTAMP/NodeJS").set(Firebase.ServerValue.TIMESTAMP);
 		updateTS=false;
 	}
 	else {
@@ -36,6 +36,14 @@ function updateTimestamp() {
 }
 
 ref.on('value', updateTimestamp);
+ref.child('_TIMESTAMP/NodeJS').once('value', function(snapshot) {
+	var timestamp = snapshot.val();
+	if (!timestamp) timestamp = 0;
+	ItemUtil.resync(itemRef, timestamp, function() {
+		ImageUtil.resync(imageRef, timestamp, function() {
+			ItemUtil.listen(itemRef);
+			ImageUtil.listen(imageRef);
+		});
+	});
+});
 
-ItemUtil.listen(itemRef);
-ImageUtil.listen(imageRef);
