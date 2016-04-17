@@ -31,11 +31,11 @@ function itemAdded(snapshot, callback) {
 					var newItem = JSON.parse(body).result;
 					console.log("Item added - id: %d", newItem.itemId);
 					if (newItem.itemId) {
+						ignoreList[newItem.itemId] = true;
 						snapshot.ref().update({
 							"id": Number(newItem.itemId),
 							"modifiedAt": Number(newItem.modifiedDate),
 						});
-						ignoreList[newItem.itemId] = true;
 					}
 				}
 				else {

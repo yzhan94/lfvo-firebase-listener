@@ -4,28 +4,27 @@ var http = require('http');
 var liferay = require('./liferay.json')
 
 var options = {
-  hostname: liferay.hostname,
+	hostname: liferay.hostname,
 	port: liferay.port,
 	auth: liferay.auth,
-  path: '/api/jsonws/lfvo-portlet.item',
-  method: 'POST',
+	path: '/api/jsonws/lfvo-portlet.item',
+	method: 'POST',
 };
 
 exports.addOrUpdate = function (item, onSuccess, onFailure) {
-	
 	if (item.categories) {
-			var categories = Object.keys(item.categories);
-			var itemCategories = '' + categories[0];
-			for (var i = 1; i < categories.length; i++) {
-				itemCategories += ', ' + categories[i];
-			}
+		var categories = Object.keys(item.categories);
+		var itemCategories = '' + categories[0];
+		for (var i = 1; i < categories.length; i++) {
+			itemCategories += ', ' + categories[i];
+		}
 	}	
 	var jsonrpc = {
 		"method":"add-or-update-item",
 		"params": {
 			"+item": "net.indaba.lostandfound.model.impl.ItemImpl",
 			"item.itemId": item.id ? item.id : 0,
-			"item.groupId": item.groupId,
+			"item.groupId": item.office,
 			"item.name": item.name,
 			"item.description": item.description,
 			"item.type": item.type,
