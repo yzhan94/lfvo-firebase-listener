@@ -5,7 +5,7 @@ var Firebase = require('firebase');
 var ItemUtil = require('./item-util.js');
 var ImageUtil = require('./image-util.js');
 
-var ref = new Firebase('https://brilliant-torch-8285.firebaseio.com/');
+var ref = new Firebase('https://burning-heat-5120.firebaseio.com/');
 var itemRef = ref.child('items');
 var imageRef = ref.child('images');
 
