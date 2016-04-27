@@ -2,7 +2,7 @@
 	"hostname": "localhost",
 	"port": 8080,
 	"auth": "test@liferay.com:test",
-	"userId": 25602,
+	"userId": 25250,
 	"companyId": 20202,
 	"groupId": 20232
 }

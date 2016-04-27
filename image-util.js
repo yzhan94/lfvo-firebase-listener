@@ -23,7 +23,7 @@ function checkItemId(snapshot) {
 	var image = imageSnapshot.val();
 	if (snapshot.exists()) {
 		image.itemId = snapshot.val();
-		callback();	
+		callback(image);	
 	} else {
 		console.error("Error adding image: Referenced item does not exist or is not synchronized.");
 		if (typeof callback == 'function') callback();
@@ -34,7 +34,7 @@ function imageAdded(snapshot, callback) {
 	var image = snapshot.val();
 	var ctx = { // Create context objects for function checkItemId
 		imageSnapshot : snapshot,
-		callback : function() {
+		callback : function(image) {
 			LiferayImageUtil.add(image, function(response) {
 				var body = '';
 				response.on('data', function (chunk) {

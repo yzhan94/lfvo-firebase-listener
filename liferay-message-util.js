@@ -18,7 +18,7 @@ exports.add = function (message, onSuccess, onFailure) {
 	var jsonrpc = {
 		"method":"add-discussion-message",
 		"params": {
-			"groupId": groupId,
+			"groupId": message.office,
 			"className": className,
 			"classPK": message.itemId,
 			"threadId": 0,
@@ -28,6 +28,7 @@ exports.add = function (message, onSuccess, onFailure) {
 		},
 		"jsonrpc":"2.0"
 	};
+	console.log(jsonrpc.params);
 
 	var req = http.request(options, onSuccess);
 	req.on('error', onFailure);
@@ -36,15 +37,34 @@ exports.add = function (message, onSuccess, onFailure) {
 };
 
 exports.delete = function (messageId, onSuccess, onFailure) {
-		var jsonrpc = {
-				"method":"delete-message",
-				"params": {
-						"messageId": messageId,
-				},
-				"jsonrpc":"2.0"
-		};
-		var req = http.request(options, onSuccess, onFailure);
-		req.on('error', onFailure);
-		req.write(JSON.stringify(jsonrpc));
-		req.end();
+	var jsonrpc = {
+			"method":"delete-message",
+			"params": {
+					"messageId": messageId,
+			},
+			"jsonrpc":"2.0"
+	};
+	var req = http.request(options, onSuccess, onFailure);
+	req.on('error', onFailure);
+	req.write(JSON.stringify(jsonrpc));
+	req.end();
 }
+
+exports.update = function (message, onSuccess, onFailure) {
+	var jsonrpc = {
+		"method":"update-discussion-message",
+		"params": {
+			"className": className,
+			"classPK": message.itemId,
+			"messageId": message.id,
+			"subject": message.subject,
+			"body": message.body,
+		},
+		"jsonrpc":"2.0"
+	};
+	var req = http.request(options, onSuccess, onFailure);
+	req.on('error', onFailure);
+	req.write(JSON.stringify(jsonrpc));
+	req.end();
+}
+

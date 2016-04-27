@@ -29,9 +29,6 @@ exports.addOrUpdate = function (item, onSuccess, onFailure) {
 			"item.description": item.description,
 			"item.type": item.type,
 			"item.new": item.id ? false : true,
-			"serviceContext.userId": liferay.userId,
-			"serviceContext.companyId": liferay.companyId,
-			"serviceContext.groupId": liferay.groupId,
 			"serviceContext.assetCategoryIds": itemCategories
 		},
 		"jsonrpc":"2.0"
