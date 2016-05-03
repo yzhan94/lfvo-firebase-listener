@@ -39,31 +39,34 @@ function messageAdded(snapshot, callback) {
 	var ctx = { // Create context objects for function checkItemId
 		messageSnapshot : snapshot,
 		callback : function(message) {
-			LiferayMessageUtil.add(message, function(response) {
-				var body = '';
-				response.on('data', function (chunk) {
-					body += chunk;
-				});
-				response.on('end', function() {
-					if (response.statusCode == 200) {
-						var newMessage = JSON.parse(body).result;
-						console.log("RESPONSE" + body);
-						if (newMessage.messageId) {
-							console.log("Message added - id: %d", newMessage.messageId);
-							ignoreList[newMessage.messageId] = true;
-							messageRef.update({
-								"id": Number(newMessage.messageId),
-							});
+			if (message) {
+				LiferayMessageUtil.add(message, function(response) {
+					var body = '';
+					response.on('data', function (chunk) {
+						body += chunk;
+					});
+					response.on('end', function() {
+						if (response.statusCode == 200) {
+							var newMessage = JSON.parse(body).result;
+							if (newMessage.messageId) {
+								console.log("Message added - id: %d", newMessage.messageId);
+								ignoreList[newMessage.messageId] = true;
+								messageRef.update({
+									"id": Number(newMessage.messageId),
+								});
+							}
+						} else {
+							console.error("Error adding message: %s ", body);
 						}
-					} else {
-						console.error("Error adding message: %s ", body);
-					}
+						if (typeof callback == 'function') callback();
+					});
+				}, function(error) {
+					console.error("Error adding message: %s ", error);
 					if (typeof callback == 'function') callback();
 				});
-			}, function(error) {
-				console.error("Error adding message: %s ", error);
+			} else {
 				if (typeof callback == 'function') callback();
-			});
+			}
 		}
 	};
 	if (!message.id) {
@@ -92,7 +95,7 @@ function messageRemoved(snapshot) {
 	});
 }
 
-function messageUpdated(snapshot) {
+function messageUpdated(snapshot, callback) {
 	var message = snapshot.val();
 	var ctx = {
 		messageSnapshot : snapshot,

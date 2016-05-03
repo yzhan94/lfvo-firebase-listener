@@ -4,11 +4,11 @@ var http = require('http');
 var liferay = require('./liferay.json')
 
 var options = {
-  hostname: liferay.hostname,
+	hostname: liferay.hostname,
 	port: liferay.port,
 	auth: liferay.auth,
-  path: '/api/jsonws/mbmessage',
-  method: 'POST',
+	path: '/api/jsonws/mbmessage',
+	method: 'POST',
 };
 
 var groupId = liferay.groupId;
@@ -28,7 +28,6 @@ exports.add = function (message, onSuccess, onFailure) {
 		},
 		"jsonrpc":"2.0"
 	};
-	console.log(jsonrpc.params);
 
 	var req = http.request(options, onSuccess);
 	req.on('error', onFailure);
@@ -38,11 +37,11 @@ exports.add = function (message, onSuccess, onFailure) {
 
 exports.delete = function (messageId, onSuccess, onFailure) {
 	var jsonrpc = {
-			"method":"delete-message",
-			"params": {
-					"messageId": messageId,
-			},
-			"jsonrpc":"2.0"
+		"method":"delete-message",
+		"params": {
+			"messageId": messageId,
+		},
+		"jsonrpc":"2.0"
 	};
 	var req = http.request(options, onSuccess, onFailure);
 	req.on('error', onFailure);

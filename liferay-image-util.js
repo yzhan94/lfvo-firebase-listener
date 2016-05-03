@@ -19,7 +19,6 @@ exports.add = function (image, onSuccess, onFailure) {
 		"params": {
 			"imageBase64String": imageString,
 			"itemId": image.itemId,
-			"updateFirebase": false
 		},
 		"jsonrpc":"2.0"
 	};
@@ -31,16 +30,15 @@ exports.add = function (image, onSuccess, onFailure) {
 };
 
 exports.delete = function (imageId, onSuccess, onFailure) {
-		var jsonrpc = {
-				"method":"delete-lf-image",
-				"params": {
-						"lfImageId": imageId,
-						"updateFirebase": false
-				},
-				"jsonrpc":"2.0"
-		};
-		var req = http.request(options, onSuccess, onFailure);
-		req.on('error', onFailure);
-		req.write(JSON.stringify(jsonrpc));
-		req.end();
+	var jsonrpc = {
+		"method":"delete-lf-image",
+		"params": {
+			"lfImageId": imageId,
+		},
+		"jsonrpc":"2.0"
+	};
+	var req = http.request(options, onSuccess, onFailure);
+	req.on('error', onFailure);
+	req.write(JSON.stringify(jsonrpc));
+	req.end();
 }

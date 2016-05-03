@@ -32,33 +32,38 @@ function checkItemId(snapshot) {
 /* Image listeners */
 function imageAdded(snapshot, callback) {
 	var image = snapshot.val();
+	var imageRef = snapshot.ref();
 	var ctx = { // Create context objects for function checkItemId
 		imageSnapshot : snapshot,
 		callback : function(image) {
-			LiferayImageUtil.add(image, function(response) {
-				var body = '';
-				response.on('data', function (chunk) {
-					body += chunk;
-				});
-				response.on('end', function() {
-					if (response.statusCode == 200) {
-						var newImage = JSON.parse(body).result;
-						if (newImage.lfImageId) {
-							console.log("Image added - id: %d", newImage.lfImageId);
-							ignoreList[newImage.lfImageId] = true;
-							imageRef.update({
-								"id": Number(newImage.lfImageId),
-							});
+			if (image) {
+				LiferayImageUtil.add(image, function(response) {
+					var body = '';
+					response.on('data', function (chunk) {
+						body += chunk;
+					});
+					response.on('end', function() {
+						if (response.statusCode == 200) {
+							var newImage = JSON.parse(body).result;
+							if (newImage.lfImageId) {
+								console.log("Image added - id: %d", newImage.lfImageId);
+								ignoreList[newImage.lfImageId] = true;
+								imageRef.update({
+									"id": Number(newImage.lfImageId),
+								});
+							}
+						} else {
+							console.error("Error adding image: %s ", body);
 						}
-					} else {
-						console.error("Error adding image: %s ", body);
-					}
+						if (typeof callback == 'function') callback();
+					});
+				}, function(error) {
+					console.error("Error adding image: %s ", error);
 					if (typeof callback == 'function') callback();
 				});
-			}, function(error) {
-				console.error("Error adding image: %s ", error);
+			} else {
 				if (typeof callback == 'function') callback();
-			});
+			}
 		}
 	};
 	if (!image.id) {
