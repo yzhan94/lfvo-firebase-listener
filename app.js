@@ -2,27 +2,82 @@
 
 var Firebase = require('firebase');
 //var FirebaseTokenGenerator = require('firebase-token-generator');
-var ItemUtil = require('./item-util.js');
-var ImageUtil = require('./image-util.js');
-var MessageUtil = require('./message-util.js');
+//var ItemUtil = require('./item-util.js');
+//var ImageUtil = require('./image-util.js');
+//var MessageUtil = require('./message-util.js');
+
+var ModelListener = require('./model-listener');
+var LiferayServices = require('./lr-services');
 
 var ref = new Firebase('https://brilliant-torch-8285.firebaseio.com/');
-var itemRef = ref.child('items');
+
+var itemRef = ref.child('items/alert');
 var imageRef = ref.child('images');
 var messageRef = ref.child('messages');
 
-/* Authentication (unnecessary for now)
-var SECRET = '<YOUR_SECRET_KEY>';
-var tokenGenerator = new FirebaseTokenGenerator(SECRET);
-var token = tokenGenerator.createToken({ uid: "lfvo-listener" });
-
-itemRef.authWithCustomToken(token, function(error, authData) {
-	if (error) {
-		console.log("Authentication Failed!", error);
-	} else {
-		console.log("Authenticated successfully with payload:", authData);
+var itemModel = {
+	"name" : "Item",
+	"lrIdFieldName" : "itemId",
+	"fbIdFieldName" : "id",
+	"relations" :   {
+		"categories": {
+	    "type": "one",
+	    "refField": "category",
+	    "idField": "$id",
+	    "lrField": "categoryId"
+	  }
 	}
-});
+};
+
+var ItemUtil = new ModelListener(itemModel, itemRef, LiferayServices.itemWS);
+
+var imageModel = {
+	"name" : "Image",
+	"lrIdFieldName" : "lfImageId",
+	"fbIdFieldName" : "id",
+	"relations" :   {
+		"items": {
+	    "type": "one",
+	    "refField": "item",
+	    "idField": "id",
+	    "lrField": "itemId"
+	  }
+	}
+};
+
+var ImageUtil = new ModelListener(imageModel, imageRef,
+	LiferayServices.imageWS);
+
+var messageModel = {
+	"name" : "Message",
+	"lrIdFieldName" : "messageId",
+	"fbIdFieldName" : "id",
+	"relations" :   {
+		"items": {
+	    "type": "one",
+	    "refField": "item",
+	    "idField": "id",
+	    "lrField": "classPK"
+	  }
+	}
+};
+
+var MessageUtil = new ModelListener(messageModel, messageRef,
+	LiferayServices.messageWS);
+
+/* Authentication (unnecessary for now)
+ *
+ *	var tokenGenerator = new FirebaseTokenGenerator(SECRET);
+ *	var SECRET = '<YOUR_SECRET_KEY>';
+ *	var token = tokenGenerator.createToken({ uid: "lfvo-listener" });
+ *
+ *	itemRef.authWithCustomToken(token, function(error, authData) {
+ *		if (error) {
+ *			console.log("Authentication Failed!", error);
+ *		} else {
+ *			console.log("Authenticated successfully with payload:", authData);
+ *		}
+ *	});
 */
 
 /* Log module activity */
@@ -31,24 +86,22 @@ function updateTimestamp() {
 	if (updateTS) {
 		ref.child("_TIMESTAMP/NodeJS").set(Firebase.ServerValue.TIMESTAMP);
 		updateTS=false;
-	}
-	else {
+	}	else {
 		updateTS=true;
 	}
-}
+};
 
 ref.on('value', updateTimestamp);
 ref.child('_TIMESTAMP/NodeJS').once('value', function(snapshot) {
 	var timestamp = snapshot.val();
 	if (!timestamp) timestamp = 0;
-	ItemUtil.resync(itemRef, timestamp, function() {
+	ItemUtil.resync(timestamp, function() {
 		ItemUtil.listen(itemRef);
-		ImageUtil.resync(imageRef, timestamp, function() {
+		ImageUtil.resync(timestamp, function() {
 			ImageUtil.listen(imageRef);
 		});
-		MessageUtil.resync(messageRef, timestamp, function() {
+		MessageUtil.resync(timestamp, function() {
 			MessageUtil.listen(messageRef);
 		});
 	});
 });
-
