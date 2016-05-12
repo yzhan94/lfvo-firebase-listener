@@ -23,7 +23,7 @@ ModelListener.prototype._syncEntity = function(entity, ref, cb) {
 };
 
 function getRefId(ref, idFieldName) {
-  return ref.once('value').then(function(snapshot) {
+  return ref.once('value').then((snapshot) => {
     if (snapshot.exists()) {
       if (idFieldName == "$id") {
         return snapshot.key();
@@ -52,7 +52,7 @@ function getRefPromises(ref, relations, entity) {
 
 function setEntityRelations(firebaseRef, relations, entity) {
   var promises = getRefPromises(firebaseRef, relations, entity);
-  return Promise.all(promises).then(function(results) {
+  return Promise.all(promises).then((results) => {
     var i = 0;
     for(var key in relations) {
       var relation = relations[key];
@@ -72,35 +72,21 @@ ModelListener.prototype.entityAdded = function(snapshot, callback) {
   var entity = snapshot.val();
 	if (!entity[model.fbIdFieldName]) {
     setEntityRelations(snapshot.ref().root(), model.relations, entity)
-    .then(function(entity) {
-      lrService.add(entity, function(response) {
-        var body = '';
-        response.on('data', function(chunk) {
-          body += chunk;
-        });
-        response.on('end', function() {
-          if (response.statusCode == 200) {
-			      //TODO handle error on parse
-            var newEntity = JSON.parse(body).result;
-            console.log("%s added - id: %d", model.name,
-              newEntity[model.lrIdFieldName]);
-            if (newEntity[model.lrIdFieldName]) {
-              ignoreList[newEntity[model.lrIdFieldName]] = true;
-              var updatedEntity = {};
-              updatedEntity[model.fbIdFieldName] =
-                Number(newEntity[model.lrIdFieldName]);
-              updatedEntity["modifiedAt"] = newEntity.modifiedDate ?
-                Number(newEntity.modifiedDate) : null
-              snapshot.ref().update(updatedEntity);
-            }
-          }	else {
-            console.error("Error adding %s: %s ", model.name, body);
-          }
-          if (typeof callback == 'function') callback();
-        });
-      }, function(error) {
+    .then((entity) => {
+      lrService.add(entity).then((body) => {
+        var newEntity = JSON.parse(body).result;
+        console.log("%s added - id: %d", model.name,
+        newEntity[model.lrIdFieldName]);
+        if (newEntity[model.lrIdFieldName]) {
+          ignoreList[newEntity[model.lrIdFieldName]] = true;
+          var updatedEntity = {};
+          updatedEntity[model.fbIdFieldName] =
+            Number(newEntity[model.lrIdFieldName]);
+          updatedEntity["modifiedAt"] = newEntity.modifiedDate ?
+            Number(newEntity.modifiedDate) : null
+          snapshot.ref().update(updatedEntity);
+        }
         if (typeof callback == 'function') callback();
-        console.error("Error adding %s: %s ", model.name, error);
       });
     }).catch(function(error) {
       console.error("Error adding %s: %s ", model.name, error);
@@ -114,25 +100,12 @@ ModelListener.prototype.entityRemoved = function(snapshot, callback) {
   var model = this.model;
   var entity = snapshot.val();
   setEntityRelations(snapshot.ref().root(), model.relations, entity)
-  .then(function(entity) {
-    lrService.delete(entity, function(response) {
-  		var body = '';
-  		response.on('data', function (chunk) {
-  			body += chunk;
-  		});
-  		response.on('end', function () {
-  			if (response.statusCode == 200) {
-  				console.log("%s removed - id: %d", model.name,
-            entity[model.fbIdFieldName]);
-  			} else {
-  				console.error("Error removing %s: %s ", model.name, body);
-  			}
-  			if (typeof callback == 'function') callback();
-  		});
-  	}, function(error) {
-  		if (typeof callback == 'function') callback();
-  		console.error("Error removing %s: %s ", model.name, error);
-  	});
+  .then((entity) => {
+    lrService.delete(entity).then((body) => {
+			console.log("%s removed - id: %d", model.name,
+        entity[model.fbIdFieldName]);
+			if (typeof callback == 'function') callback();
+		});
   }).catch(function(error) {
     console.log(error);
   });
@@ -150,21 +123,11 @@ ModelListener.prototype.entityUpdated = function(snapshot, callback) {
 		ignoreList[entity[model.fbIdFieldName]] = null;
 		if (typeof callback == 'function') callback();
 	} else {
-		this.lrService.update(entity, function(response) {
-			var body = '';
-			response.on('data', function (chunk) {
-				body += chunk;
-			});
-			response.on('end', function () {
-				if (response.statusCode == 200) {
-					console.log("%s updated - id: %d", model.name,
-            entity[model.fbIdFieldName]);
-				} else {
-					console.error("Error updating %s: %s ", model.name, body);
-				}
+		this.lrService.update(entity).then((response) => {
+				console.log("%s updated - id: %d", model.name,
+          entity[model.fbIdFieldName]);
 				if (typeof callback == 'function') callback();
-			});
-		}, function(error) {
+		}).catch((error) => {
 			console.error("Error updating %s: %s ", model.name, error);
 			if (typeof callback == 'function') callback();
 		});
