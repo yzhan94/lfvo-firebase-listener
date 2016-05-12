@@ -92,16 +92,14 @@ function updateTimestamp() {
 };
 
 ref.on('value', updateTimestamp);
-ref.child('_TIMESTAMP/NodeJS').once('value', function(snapshot) {
-	var timestamp = snapshot.val();
+ref.child('_TIMESTAMP/NodeJS').once('value').then((snapshot) => {
+	//var timestamp = snapshot.val();
+	var timestamp = 0;
 	if (!timestamp) timestamp = 0;
-	ItemUtil.resync(timestamp, function() {
-		ItemUtil.listen(itemRef);
-		ImageUtil.resync(timestamp, function() {
-			ImageUtil.listen(imageRef);
-		});
-		MessageUtil.resync(timestamp, function() {
-			MessageUtil.listen(messageRef);
-		});
+	ItemUtil.start(timestamp).then(() => {
+		ImageUtil.start(timestamp);
+		MessageUtil.start(timestamp);
 	});
+}).catch((error) => {
+	console.error("%s", error);
 });

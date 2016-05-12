@@ -8,17 +8,21 @@ function ModelListener(model, ref, lrService) {
 
 ModelListener.prototype._ignoreList = {};
 
-ModelListener.prototype._syncEntity = function(entity, ref, cb) {
+ModelListener.prototype._syncEntity = function(entity, ref) {
+  var model = this.model;
   var snapshot = {
-    val : function() { return entity; },
-    ref : function() { return ref; }
+    val : () => { return entity; },
+    ref : () => { return ref; }
   };
   if (entity._liferay) {
-    ref.child('_liferay').remove();
+    return new Promise((resolve, reject) => {
+      ref.child('_liferay').remove();
+      resolve();
+    });
   } else if (entity[model.fbIdFieldName]) { // Entity update
-    entityUpdated(snapshot, callback);
+    return this.entityUpdated(snapshot);
   } else { // Entity add
-    entityAdded(snapshot, callback);
+    return this.entityAdded(snapshot);
   }
 };
 
@@ -65,15 +69,15 @@ function setEntityRelations(firebaseRef, relations, entity) {
   });
 };
 
-ModelListener.prototype.entityAdded = function(snapshot, callback) {
+ModelListener.prototype.entityAdded = function(snapshot) {
   var lrService = this.lrService;
   var ignoreList = this._ignoreList;
   var model = this.model;
   var entity = snapshot.val();
 	if (!entity[model.fbIdFieldName]) {
-    setEntityRelations(snapshot.ref().root(), model.relations, entity)
+    return setEntityRelations(snapshot.ref().root(), model.relations, entity)
     .then((entity) => {
-      lrService.add(entity).then((body) => {
+      return lrService.add(entity).then((body) => {
         var newEntity = JSON.parse(body).result;
         console.log("%s added - id: %d", model.name,
         newEntity[model.lrIdFieldName]);
@@ -86,56 +90,56 @@ ModelListener.prototype.entityAdded = function(snapshot, callback) {
             Number(newEntity.modifiedDate) : null
           snapshot.ref().update(updatedEntity);
         }
-        if (typeof callback == 'function') callback();
       });
-    }).catch(function(error) {
+    }).catch((error) => {
       console.error("Error adding %s: %s ", model.name, error);
     });
 	}
 };
 
-ModelListener.prototype.entityRemoved = function(snapshot, callback) {
+ModelListener.prototype.entityRemoved = function(snapshot) {
   var lrService = this.lrService;
   var ignoreList = this._ignoreList;
   var model = this.model;
   var entity = snapshot.val();
-  setEntityRelations(snapshot.ref().root(), model.relations, entity)
+  return setEntityRelations(snapshot.ref().root(), model.relations, entity)
   .then((entity) => {
-    lrService.delete(entity).then((body) => {
+    return lrService.delete(entity).then((body) => {
 			console.log("%s removed - id: %d", model.name,
         entity[model.fbIdFieldName]);
-			if (typeof callback == 'function') callback();
 		});
-  }).catch(function(error) {
+  }).catch((error) => {
     console.log(error);
   });
 };
 
-ModelListener.prototype.entityUpdated = function(snapshot, callback) {
+ModelListener.prototype.entityUpdated = function(snapshot) {
   var ignoreList = this._ignoreList;
   var model = this.model;
   var entity = snapshot.val();
-	if (entity._liferay) {
-		ignoreList[entity[model.fbIdFieldName]] = true;
-		snapshot.ref().child("/_liferay").remove();
-		if (typeof callback == 'function') callback();
-	} else if (ignoreList[entity[model.fbIdFieldName]]) {
-		ignoreList[entity[model.fbIdFieldName]] = null;
-		if (typeof callback == 'function') callback();
-	} else {
-		this.lrService.update(entity).then((response) => {
-				console.log("%s updated - id: %d", model.name,
+  var promise = new Promise((resolve, reject) => {
+    if (entity._liferay) {
+      ignoreList[entity[model.fbIdFieldName]] = true;
+      snapshot.ref().child("/_liferay").remove();
+    } else if (ignoreList[entity[model.fbIdFieldName]]) {
+      ignoreList[entity[model.fbIdFieldName]] = null;
+    } else {
+      this.lrService.update(entity).then((response) => {
+        console.log("%s updated - id: %d", model.name,
           entity[model.fbIdFieldName]);
-				if (typeof callback == 'function') callback();
-		}).catch((error) => {
-			console.error("Error updating %s: %s ", model.name, error);
-			if (typeof callback == 'function') callback();
-		});
-	}
+          resolve();
+      }).catch((error) => {
+        console.error("Error updating %s: %s ", model.name, error);
+        reject(error);
+      });
+    }
+    resolve();
+  });
+  return promise;
 };
 
 /* Enable listeners */
-ModelListener.prototype.listen = function() {
+ModelListener.prototype._listen = function() {
 	this.ref.on('child_removed', this.entityRemoved, this);
 	this.ref.on('child_changed', this.entityUpdated, this);
 	this.ref.on('child_added', this.entityAdded, this);
@@ -143,25 +147,23 @@ ModelListener.prototype.listen = function() {
 };
 
 /* Resync entities */
-ModelListener.prototype.resync = function(TIMESTAMP, shared_callback) {
+ModelListener.prototype.start = function(TIMESTAMP) {
   var model = this.model;
-  console.log("StartSync %s---", model.name);
-	this.ref.orderByChild("modifiedAt").startAt(TIMESTAMP)
-    .once('value', function(snapshot) {
+	return this.ref.orderByChild("modifiedAt").startAt(TIMESTAMP).once('value')
+    .then((snapshot) => {
+      console.log("StartSync %s---", model.name);
   		var entities = snapshot.val();
-  		var counter = entities ? Object.keys(entities).length+1 : 1;
-  		var callback = function() {
-  			counter--;
-  			if (counter == 0) {
-  				console.log("---EndSync %s", model.name);
-  				shared_callback();
-  			}
-  		};
+      var promises = [];
   		/* Push unsynced changes to Liferay */
   		for (var key in entities) {
-  			_syncEntity(entities[key], this.ref.child(key), callback);
+        var p = this._syncEntity(entities[key], this.ref.child(key));
+  			promises.push(p);
   		}
-  		callback();
+      return Promise.all(promises)
+      .then(() => {
+        console.log("---EndSync %s", model.name);
+        this._listen();
+      });
 	});
 };
 
