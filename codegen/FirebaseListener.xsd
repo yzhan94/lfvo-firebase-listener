@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+    <xs:element name="firebaseListener">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="config" type="configType"/>
+                <xs:element name="modelListeners">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element maxOccurs="unbounded" minOccurs="0" ref="model"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="configType">
+        <xs:sequence>
+            <xs:element name="firebase">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element type="xs:anyURI" name="url"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="liferay">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element type="xs:string" name="host"/>
+                        <xs:element type="xs:short" name="port"/>
+                        <xs:element type="xs:string" name="auth"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="modelType">
+        <xs:sequence>
+            <xs:element name="mapping">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="field">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element type="xs:string" name="source"/>
+                                    <xs:element type="xs:string" name="target"/>
+                                </xs:sequence>
+                                <xs:attribute type="xs:string" name="primary-key" use="optional"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element type="xs:string" name="source"/>
+            <xs:element name="target">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="service" maxOccurs="3" minOccurs="3">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="arg" maxOccurs="unbounded" minOccurs="0">
+                                        <xs:complexType>
+                                            <xs:simpleContent>
+                                                <xs:extension base="xs:string">
+                                                  <xs:attribute type="xs:string" name="param"
+                                                  use="required"/>
+                                                  <xs:attribute type="xs:string" name="const"
+                                                  use="optional"/>
+                                                </xs:extension>
+                                            </xs:simpleContent>
+                                        </xs:complexType>
+                                    </xs:element>
+                                </xs:sequence>
+                                <xs:attribute type="methodType" name="method" use="required"/>
+                                <xs:attribute type="xs:string" name="name" use="required"/>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                    <xs:attribute type="xs:string" name="baseURL" use="optional"/>
+                </xs:complexType>
+            </xs:element>
+            <xs:element minOccurs="0" ref="relations"/>
+        </xs:sequence>
+        <xs:attribute type="xs:string" name="id" use="required"/>
+    </xs:complexType>
+
+    <xs:simpleType name="methodType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="add"/>
+            <xs:enumeration value="update"/>
+            <xs:enumeration value="delete"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:element name="model" type="modelType">
+        <xs:key name="modelKey">
+            <xs:selector xpath="."/>
+            <xs:field xpath="@id"/>
+        </xs:key>
+        <xs:keyref refer="modelKey" name="relation">
+            <xs:selector xpath="relations/relation"/>
+            <xs:field xpath="@idRef"/>
+        </xs:keyref>
+    </xs:element>
+    <xs:element name="relations">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="relation" maxOccurs="unbounded" minOccurs="0">
+                    <xs:complexType>
+                        <xs:simpleContent>
+                            <xs:extension base="xs:string">
+                                <xs:attribute type="xs:string" name="idref" use="required"/>
+                                <xs:attribute type="xs:string" name="type" use="required"/>
+                            </xs:extension>
+                        </xs:simpleContent>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>

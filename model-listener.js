@@ -1,5 +1,7 @@
 'use strict';
 
+var Firebase = require('firebase');
+
 function ModelListener(model, ref, lrService) {
   this.model = model;
   this.ref = ref;
@@ -19,7 +21,7 @@ ModelListener.prototype._syncEntity = function(entity, ref) {
       ref.child('_liferay').remove();
       resolve();
     });
-  } else if (entity[model.fbIdFieldName]) { // Entity update
+  } else if (entity[model.fbId]) { // Entity update
     return this.entityUpdated(snapshot);
   } else { // Entity add
     return this.entityAdded(snapshot);
@@ -48,7 +50,7 @@ function getRefPromises(ref, relations, entity) {
     var refKey = entity[relation.refField];
     if (refKey) {
       var valRef = ref.child(key).child(refKey);
-      promises.push(getRefId(valRef, relation.idField));
+      promises.push(getRefId(valRef, relation.fbId));
     }
   }
   return promises;
@@ -62,7 +64,7 @@ function setEntityRelations(firebaseRef, relations, entity) {
       var relation = relations[key];
       var refKey = entity[relation.refField];
       if (refKey) {
-        entity[relation.lrField] = results[i++];
+        entity[relation.lrId] = results[i++];
       }
     }
     return entity;
@@ -74,22 +76,23 @@ ModelListener.prototype.entityAdded = function(snapshot) {
   var ignoreList = this._ignoreList;
   var model = this.model;
   var entity = snapshot.val();
-	if (!entity[model.fbIdFieldName]) {
+	if (!entity[model.fbId]) {
     return setEntityRelations(snapshot.ref().root(), model.relations, entity)
     .then((entity) => {
       return lrService.add(entity).then((body) => {
         var newEntity = JSON.parse(body).result;
         console.log("%s added - id: %d", model.name,
-        newEntity[model.lrIdFieldName]);
-        if (newEntity[model.lrIdFieldName]) {
-          ignoreList[newEntity[model.lrIdFieldName]] = true;
+        newEntity[model.lrId]);
+        if (newEntity[model.lrId]) {
+          ignoreList[newEntity[model.lrId]] = true;
           var updatedEntity = {};
-          updatedEntity[model.fbIdFieldName] =
-            Number(newEntity[model.lrIdFieldName]);
+          updatedEntity[model.fbId] =
+            Number(newEntity[model.lrId]);
           updatedEntity["modifiedAt"] = newEntity.modifiedDate ?
             Number(newEntity.modifiedDate) : null
           snapshot.ref().update(updatedEntity);
         }
+        this.ref.root().child('_TIMESTAMP').set(Firebase.ServerValue.TIMESTAMP);
       });
     }).catch((error) => {
       console.error("Error adding %s: %s ", model.name, error);
@@ -106,7 +109,8 @@ ModelListener.prototype.entityRemoved = function(snapshot) {
   .then((entity) => {
     return lrService.delete(entity).then((body) => {
 			console.log("%s removed - id: %d", model.name,
-        entity[model.fbIdFieldName]);
+        entity[model.fbId]);
+      this.ref.root().child('_TIMESTAMP').set(Firebase.ServerValue.TIMESTAMP);
 		});
   }).catch((error) => {
     console.log(error);
@@ -119,15 +123,16 @@ ModelListener.prototype.entityUpdated = function(snapshot) {
   var entity = snapshot.val();
   var promise = new Promise((resolve, reject) => {
     if (entity._liferay) {
-      ignoreList[entity[model.fbIdFieldName]] = true;
+      ignoreList[entity[model.fbId]] = true;
       snapshot.ref().child("/_liferay").remove();
-    } else if (ignoreList[entity[model.fbIdFieldName]]) {
-      ignoreList[entity[model.fbIdFieldName]] = null;
+    } else if (ignoreList[entity[model.fbId]]) {
+      ignoreList[entity[model.fbId]] = null;
     } else {
-      this.lrService.update(entity).then((response) => {
+      return this.lrService.update(entity).then((response) => {
         console.log("%s updated - id: %d", model.name,
-          entity[model.fbIdFieldName]);
-          resolve();
+          entity[model.fbId]);
+        this.ref.root().child('_TIMESTAMP').set(Firebase.ServerValue.TIMESTAMP);
+        resolve();
       }).catch((error) => {
         console.error("Error updating %s: %s ", model.name, error);
         reject(error);
@@ -149,7 +154,7 @@ ModelListener.prototype._listen = function() {
 /* Resync entities */
 ModelListener.prototype.start = function(TIMESTAMP) {
   var model = this.model;
-	return this.ref.orderByChild("modifiedAt").startAt(TIMESTAMP).once('value')
+	return this.ref.orderByChild("modifiedDate").startAt(TIMESTAMP).once('value')
     .then((snapshot) => {
       console.log("StartSync %s---", model.name);
   		var entities = snapshot.val();
@@ -166,5 +171,13 @@ ModelListener.prototype.start = function(TIMESTAMP) {
       });
 	});
 };
+
+ModelListener.prototype.restart = function(TIMESTAMP) {
+  this.ref.off('child_removed', this.entityRemoved, this);
+  this.ref.off('child_changed', this.entityUpdated, this);
+  this.ref.off('child_added', this.entityAdded, this);
+  console.log('**%s listeners disabled**', this.model.name);
+  return this.start(TIMESTAMP);
+}
 
 module.exports = ModelListener;

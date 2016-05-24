@@ -1,0 +1,101 @@
+<firebaseListener>
+    <config>
+        <firebase>
+            <url>https://brilliant-torch-8285.firebaseio.com/</url>
+        </firebase>
+        <liferay>
+            <host>localhost</host>
+            <port>8080</port>
+            <auth>test@liferay.com:test</auth>
+        </liferay>
+    </config>
+    <modelListeners>
+        <model id="item">
+            <mapping>
+                <field primary-key="true">
+                    <source>id</source>
+                    <target>itemId</target>
+                </field>
+            </mapping>
+            <source>items</source>
+            <target baseURL="/api/jsonws/lfvo-portlet.item">
+                <service method="add" name="add-or-update-item">
+                    <arg param="+item" const="true">"net.indaba.lfvo.model.ItemImpl"</arg>
+                    <arg param="item.itemId">id</arg>
+                    <arg param="item.groupId">office</arg>
+                    <arg param="item.name">name</arg>
+                    <arg param="item.description">description</arg>
+                    <arg param="item.type">type</arg>
+                    <arg param="serviceContext.assetCategoryIds">category</arg>
+                </service>
+                <service method="update" name="add-or-update-item">
+                    <arg param="+item" const="true">"net.indaba.lfvo.model.ItemImpl"</arg>
+                    <arg param="item.itemId">id</arg>
+                    <arg param="item.groupId">office</arg>
+                    <arg param="item.name">name</arg>
+                    <arg param="item.description">description</arg>
+                    <arg param="item.type">type</arg>
+                    <arg param="serviceContext.assetCategoryIds">category</arg>
+                </service>
+                <service method="delete" name="delete-item">
+                    <arg param="itemId">id</arg>
+                </service>
+            </target>
+        </model>
+        <model id="image">
+            <mapping>
+                <field primary-key="true">
+                    <source>id</source>
+                    <target>lfImageId</target>
+                </field>
+            </mapping>
+            <source>images</source>
+            <target baseURL="/api/jsonws/lfvo-portlet.lfImage">
+                <service method="add" name="add-lf-image">
+                    <arg param="imageBase64String">image</arg>
+                    <arg param="itemId">itemId</arg>
+                </service>
+                <service method="update" name=""/>
+                <service method="delete" name="delete-lf-image">
+                    <arg param="lfImageId">id</arg>
+                </service>
+            </target>
+            <relations>
+                <relation idref="item" type="many-to-one">item</relation>
+            </relations>
+        </model>
+        <model id="message">
+            <mapping>
+                <field primary-key="true">
+                    <source>id</source>
+                    <target>messageId</target>
+                </field>
+            </mapping>
+            <source>messages</source>
+            <target baseURL="/api/jsonws/mbmessage">
+                <service method="add" name="add-discussion-message">
+                    <arg param="groupId">office</arg>
+                    <arg param="className" const="true">"net.indaba.lostandfound.model.Item"</arg>
+                    <arg param="classPK">itemId</arg>
+                    <arg param="threadId" const="true">0</arg>
+                    <arg param="parentMessageId" const="true">0</arg>
+                    <arg param="subject">subject</arg>
+                    <arg param="body">body</arg>
+                </service>
+                <service method="update" name="update-discussion-message">
+                    <arg param="className" const="true">"net.indaba.lostandfound.model.Item"</arg>
+                    <arg param="classPK">itemId</arg>
+                    <arg param="messageId">id</arg>
+                    <arg param="subject">subject</arg>
+                    <arg param="body">body</arg>
+                </service>
+                <service method="delete" name="delete-message">
+                    <arg param="messageId">id</arg>
+                </service>
+            </target>
+            <relations>
+                <relation idref="item" type="many-to-one">item</relation>
+            </relations>
+        </model>
+    </modelListeners>
+</firebaseListener>

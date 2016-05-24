@@ -1,0 +1,12 @@
+
+{
+	"firebase" : {
+		"url" : "https://brilliant-torch-8285.firebaseio.com/"
+	},
+	"liferay" : {
+		"hostname" : "localhost",
+		"port" : "8080",
+		"auth" : "test@liferay.com:test"
+	}
+}
+	

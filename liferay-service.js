@@ -1,6 +1,6 @@
 'use strict'
 
-var liferay = require('./liferay.json');
+var liferay = require('./config.json').liferay;
 var http = liferay.hostname.startsWith('https')
 	? require('https') : require('http');
 
@@ -19,7 +19,7 @@ LiferayService.prototype._liferayRequest = function(jsonrpc) {
     var req = http.request(this._options, (response) => {
       if (response.statusCode < 200 || response.statusCode > 299) {
          reject(new Error('HTTP : ' + response.statusCode));
-       }
+      }
       const body = [];
       response.on('data', (chunk) => body.push(chunk));
       response.on('end', () => resolve(body.join('')));
