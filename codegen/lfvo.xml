@@ -20,16 +20,17 @@
             <source>items</source>
             <target baseURL="/api/jsonws/lfvo-portlet.item">
                 <service method="add" name="add-or-update-item">
-                    <arg param="+item" const="true">"net.indaba.lfvo.model.ItemImpl"</arg>
+                    <arg param="+item" const="true">"net.indaba.lostandfound.model.impl.ItemImpl"</arg>
                     <arg param="item.itemId">id</arg>
                     <arg param="item.groupId">office</arg>
                     <arg param="item.name">name</arg>
                     <arg param="item.description">description</arg>
                     <arg param="item.type">type</arg>
+					<arg param="item.new" const="true">true</arg>
                     <arg param="serviceContext.assetCategoryIds">category</arg>
                 </service>
                 <service method="update" name="add-or-update-item">
-                    <arg param="+item" const="true">"net.indaba.lfvo.model.ItemImpl"</arg>
+                    <arg param="+item" const="true">"net.indaba.lostandfound.model.impl.ItemImpl"</arg>
                     <arg param="item.itemId">id</arg>
                     <arg param="item.groupId">office</arg>
                     <arg param="item.name">name</arg>

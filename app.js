@@ -8,7 +8,7 @@ var ModelListener = require('./model-listener');
 var LiferayServices = require('./services');
 
 var ref = new Firebase(config.firebase.url);
-var itemRef= ref.child("items");
+var itemRef= ref.child("items").child("alert");
 var itemModel = { 
 	"name" : "item",
 	"lrId" : "itemId",

@@ -5,19 +5,20 @@ var itemWS = new LiferayService('/api/jsonws/lfvo-portlet.item');
 itemWS.addMethod = 'add-or-update-item';
 itemWS.addParams = function(item) {
 	return {
-		"+item" : "net.indaba.lfvo.model.ItemImpl",
+		"+item" : "net.indaba.lostandfound.model.impl.ItemImpl",
 		"item.itemId" : item.id,
 		"item.groupId" : item.office,
 		"item.name" : item.name,
 		"item.description" : item.description,
 		"item.type" : item.type,
+		"item.new" : true,
 		"serviceContext.assetCategoryIds" : item.category
 	};
 };
 itemWS.updateMethod = 'add-or-update-item';
 itemWS.updateParams = function(item) {
 	return {
-		"+item" : "net.indaba.lfvo.model.ItemImpl",
+		"+item" : "net.indaba.lostandfound.model.impl.ItemImpl",
 		"item.itemId" : item.id,
 		"item.groupId" : item.office,
 		"item.name" : item.name,
