@@ -1,12 +1,16 @@
 
 {
 	"firebase" : {
-		"url" : "https://brilliant-torch-8285.firebaseio.com/"
+		"url" : "https://lfvo-test.firebaseio.com/"
 	},
 	"liferay" : {
 		"hostname" : "localhost",
 		"port" : "8080",
 		"auth" : "test@liferay.com:test"
+	},
+	"ionic" : {
+		"jwt" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIzN2UyNDFmOS1kYWFkLTRhNDktYWQ3OC05OWNmMGQyMzg5ODMifQ.-ymmPYSVtDOB7rJrcmnu8uxSffftmJnJhQxeS1omG5Y",
+		"profile" : "test"
 	}
 }
 	

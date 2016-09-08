@@ -52,6 +52,7 @@ var messageListener= new ModelListener(messageModel, messageRef, LiferayServices
 	
 
 function restartListeners(timestamp) {
+	console.log(timestamp);
 	itemListener.restart(timestamp).then(() => {
 		return imageListener.restart(timestamp);
 	}).then(() => {

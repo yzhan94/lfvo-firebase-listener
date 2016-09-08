@@ -1,6 +1,7 @@
 'use strict';
 
 var Firebase = require('firebase');
+var IonicPush = require('./ionic-push');
 
 function ModelListener(model, ref, lrService) {
   this.model = model;
@@ -11,21 +12,21 @@ function ModelListener(model, ref, lrService) {
 ModelListener.prototype._ignoreList = {};
 
 ModelListener.prototype._syncEntity = function(entity, ref) {
-  var model = this.model;
-  var snapshot = {
-    val : () => { return entity; },
-    ref : () => { return ref; }
-  };
-  if (entity._liferay) {
-    return new Promise((resolve, reject) => {
-      ref.child('_liferay').remove();
-      resolve();
-    });
-  } else if (entity[model.fbId]) { // Entity update
-    return this.entityUpdated(snapshot);
-  } else { // Entity add
-    return this.entityAdded(snapshot);
-  }
+	var model = this.model;
+	var snapshot = {
+		val : () => { return entity; },
+		ref : () => { return ref; }
+	};
+	if (entity._liferay) {
+		return new Promise((resolve, reject) => {
+			ref.child('_liferay').remove();
+			resolve();
+		});
+	} else if (entity[model.fbId]) { // Entity update
+		return this.entityUpdated(snapshot);
+	} else { // Entity add
+		return this.entityAdded(snapshot);
+	}
 };
 
 function getRefId(ref, idFieldName) {
@@ -76,6 +77,11 @@ ModelListener.prototype.entityAdded = function(snapshot) {
   var ignoreList = this._ignoreList;
   var model = this.model;
   var entity = snapshot.val();
+	IonicPush.post('New item alert: ' + entity.name).then((response) => {
+		console.log(JSON.parse(response));
+	}).catch((error) => {
+		console.log(error);
+	});
 	if (!entity[model.fbId]) {
     return setEntityRelations(snapshot.ref().root(), model.relations, entity)
     .then((entity) => {
