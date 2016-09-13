@@ -73,15 +73,20 @@ function setEntityRelations(firebaseRef, relations, entity) {
 };
 
 ModelListener.prototype.entityAdded = function(snapshot) {
-  var lrService = this.lrService;
-  var ignoreList = this._ignoreList;
-  var model = this.model;
-  var entity = snapshot.val();
-	IonicPush.post('New item alert: ' + entity.name).then((response) => {
-		console.log(JSON.parse(response));
-	}).catch((error) => {
-		console.log(error);
-	});
+	var lrService = this.lrService;
+	var ignoreList = this._ignoreList;
+	var model = this.model;
+	var entity = snapshot.val();
+	var currentTime = Date.now();
+	var diff = currentTime - snapshot.val().createdAt;
+	if (snapshot.ref().parent().key() === 'alert' && 
+		diff < 100000 /*TODO push notification condition*/) {
+		IonicPush.post('New item alert: ' + entity.name).then((response) => {
+			console.log(JSON.parse(response));
+		}).catch((error) => {
+			console.log(error);
+		});
+	}
 	if (!entity[model.fbId]) {
     return setEntityRelations(snapshot.ref().root(), model.relations, entity)
     .then((entity) => {
@@ -114,7 +119,7 @@ ModelListener.prototype.entityRemoved = function(snapshot) {
   return setEntityRelations(snapshot.ref().root(), model.relations, entity)
   .then((entity) => {
     return lrService.delete(entity).then((body) => {
-			console.log("%s removed - id: %d", model.name,
+		console.log("%s removed - id: %d", model.name,
         entity[model.fbId]);
       this.ref.root().child('_TIMESTAMP').set(Firebase.ServerValue.TIMESTAMP);
 		});
