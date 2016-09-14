@@ -14,7 +14,7 @@ var options = {
 	}
 };
 
-exports.post = function(message, devices) {
+exports.post = function(message, payload, devices) {
 	return new Promise((resolve, reject) => {
 		var req = https.request(options, (response) => {
 		  if (response.statusCode < 200 || response.statusCode > 299) {
@@ -30,7 +30,9 @@ exports.post = function(message, devices) {
 			"profile": ionic.profile,
 			"notification": {
 				"message": message
-			}	
+			},
+			"payload": payload 
+				
 		};
 		req.write(JSON.stringify(body));
 		req.end();
