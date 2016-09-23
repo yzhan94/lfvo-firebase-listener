@@ -78,10 +78,11 @@ ModelListener.prototype.entityAdded = function(snapshot) {
 	var model = this.model;
 	var entity = snapshot.val();
 	var currentTime = Date.now();
-	var diff = currentTime - snapshot.val().createdAt;
+	var diff = currentTime - snapshot.val().createDate;
 	if (snapshot.ref().parent().key() === 'alert' && 
 		diff < 100000 /*TODO push notification condition*/) {
-		IonicPush.post('New item alert: ' + entity.name, {'itemId': snapshot.key()}).then((response) => {
+		IonicPush.post('New item alert: ' + entity.name, {'itemId': snapshot.key()})
+		.then((response) => {
 			console.log(JSON.parse(response));
 		}).catch((error) => {
 			console.log(error);
