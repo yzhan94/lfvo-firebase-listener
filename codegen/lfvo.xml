@@ -51,7 +51,7 @@
                 </field>
             </mapping>
             <source>images</source>
-            <target baseURL="/api/jsonws/lfvo-portlet.lfImage">
+            <target baseURL="/api/jsonws/lfvo-portlet.lfimage">
                 <service method="add" name="add-lf-image">
                     <arg param="imageBase64String">image</arg>
                     <arg param="itemId">itemId</arg>

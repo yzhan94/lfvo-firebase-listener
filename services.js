@@ -1,4 +1,5 @@
 'use strict';
+
 var LiferayService = require('./liferay-service.js');
 
 var itemWS = new LiferayService('/api/jsonws/lfvo-portlet.item');
@@ -36,7 +37,7 @@ itemWS.deleteParams = function(item) {
 exports.itemWS = itemWS;
 
 
-var imageWS = new LiferayService('/api/jsonws/lfvo-portlet.lfImage');
+var imageWS = new LiferayService('/api/jsonws/lfvo-portlet.lfimage');
 imageWS.addMethod = 'add-lf-image';
 imageWS.addParams = function(image) {
 	return {
@@ -68,7 +69,7 @@ messageWS.addParams = function(message) {
 		"classPK" : message.itemId,
 		"threadId" : 0,
 		"parentMessageId" : 0,
-		"subject" : message.subject,
+		"subject" : message.body,
 		"body" : message.body
 	};
 };
@@ -89,3 +90,4 @@ messageWS.deleteParams = function(message) {
 	};
 };
 exports.messageWS = messageWS;
+

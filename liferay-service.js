@@ -16,16 +16,19 @@ function LiferayService(servicePath) {
 
 LiferayService.prototype._liferayRequest = function(jsonrpc) {
 	return new Promise((resolve, reject) => {
-    var req = http.request(this._options, (response) => {
-      if (response.statusCode < 200 || response.statusCode > 299) {
-         reject(new Error('HTTP : ' + response.statusCode));
-      }
-      const body = [];
-      response.on('data', (chunk) => body.push(chunk));
-      response.on('end', () => resolve(body.join('')));
-    });
-    req.on('error', (err) => reject(err))
+		var req = http.request(this._options, (response) => {
+			if (response.statusCode < 200 || response.statusCode > 299) {
+			   reject(new Error('HTTP : ' + response.statusCode));
+			}
+			const body = [];
+			response.on('data', (chunk) => body.push(chunk));
+			response.on('end', () => resolve(body.join('')));
+		});
+		req.on('error', (err) => {
+			reject(err);
+		});
 		req.write(JSON.stringify(jsonrpc));
+		//console.log(JSON.stringify(jsonrpc));
 		req.end();
 	});
 };
@@ -34,6 +37,7 @@ LiferayService.prototype.add = function(entity) {
 	var jsonrpc = {
 		"method": this.addMethod,
 		"params": this.addParams(entity),
+		"id": Date.now(),
 		"jsonrpc": "2.0"
 	};
 	return this._liferayRequest(jsonrpc);
@@ -42,6 +46,7 @@ LiferayService.prototype.update = function(entity) {
 	var jsonrpc = {
 		"method": this.updateMethod,
 		"params": this.updateParams(entity),
+		"id": Date.now(),
 		"jsonrpc": "2.0"
 	};
 	return this._liferayRequest(jsonrpc);
@@ -50,6 +55,7 @@ LiferayService.prototype.delete = function(entity) {
 	var jsonrpc = {
 		"method": this.deleteMethod,
 		"params": this.deleteParams(entity),
+		"id": Date.now(),
 		"jsonrpc": "2.0"
 	};
 	return this._liferayRequest(jsonrpc);
